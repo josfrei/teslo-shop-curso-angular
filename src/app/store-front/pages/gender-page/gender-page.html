@@ -1,0 +1,23 @@
+<h1 class="text-xl font-bold font-montserrat">Todos los productos
+  <span class="text-accent">{{gender() | i18nSelect:genderTipo}}</span> </h1>
+<h2 class="text-xl mb-5">Para todos los gustos</h2>
+
+
+<pagination-component
+[paginasTotales]="productsResource.value()?.pages ?? 0"
+[paginaActual]="paginationService.paginaActual()"
+/>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-2 gap-3">
+
+  @for (producto of productsResource.value()?.products ?? []; track $index) {
+  <product-card [product]="producto" />
+  }
+  <!-- Empty -->
+   @if (!productsResource.hasValue()) {
+      <p>No hay productos</p>
+   }
+
+
+</div>
+
