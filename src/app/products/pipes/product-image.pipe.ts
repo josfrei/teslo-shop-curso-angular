@@ -8,7 +8,18 @@ const baseUrl = environment.baseUrl;
 })
 
 export class ProductImagePipe implements PipeTransform {
-  transform(value: string | string[]): any {
+  transform(value: null | string | string[]): any {
+
+    console.log(value)
+    //si es null
+    if(typeof value === null){
+      return `${baseUrl}/files/product/${value}`
+    }
+
+    //si es un string y empieza por bob
+    if(typeof value === 'string' && value.startsWith('blob:')){
+      return value;
+    }
 
     //si es un string
     if(typeof value === 'string'){
@@ -16,7 +27,7 @@ export class ProductImagePipe implements PipeTransform {
     }
 
     //asignamos a imagen la posicion 0
-    const image = value[0];
+    const image = value?.at(0);
     //si no hay ponemos la imagen por defecto
     if(!image){
       return './assets/images/placeholderimages/no-image.jpg'

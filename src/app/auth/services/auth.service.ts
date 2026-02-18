@@ -39,7 +39,7 @@ export class AuthService {
 
   user = computed<User | null>(() => this._user());
   token = computed(this._token);
-
+  isAdmin = computed(() => this._user()?.roles.includes('admin') ?? false); //si el rol incluye admin devuelve true, sino false
 
   /**
    * Función de login
@@ -88,6 +88,9 @@ export class AuthService {
       return of(false);
     }
 
+    
+
+
     return this.http.get<AuthResponse>(`${baseUrl}/auth/check-status`, {
       //     headers: {
       //      Authorization: `Bearer ${token}`,
@@ -96,6 +99,7 @@ export class AuthService {
       map(resp => this.handleAuthSuccess(resp)), //tap es para efectos secundarios
       catchError((error: any) => this.handleAuthError(error))
     )
+
   }
 
 

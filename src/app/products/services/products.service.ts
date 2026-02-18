@@ -1,8 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Product, ProductsResponse } from '../interfaces/product-interface';
-import { delay, Observable, of, tap } from 'rxjs';
+import { Gender, Product, ProductsResponse } from '../interfaces/product-interface';
+import { delay, forkJoin, map, Observable, of, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { User } from '@/auth/interfaces/user.interface';
+import { fileNamer } from '../../../../../10-nest-teslo-shop-backend/src/files/helpers/fileNamer.helper';
 
 const baseUrl = environment.baseUrl;
 
@@ -12,9 +14,24 @@ interface Options {
   gender?: string;
 }
 
+// Producto vacío para la creación de un nuevo producto
+const ProductoVacio: Product = {
+  id: 'new',
+  title: '',
+  price: 0,
+  description: '',
+  slug: '',
+  stock: 0,
+  sizes: [],
+  gender: Gender.Unisex,
+  tags: [],
+  images: [],
+  user: {} as User
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductsService {
-  private hhtp = inject(HttpClient);
+  private http = inject(HttpClient);
 
   private productsCache = new Map<string, ProductsResponse>(); // CACHÉ para productos
   private productCache = new Map<string, Product>(); //CACHÉ para producto individual
@@ -37,7 +54,7 @@ export class ProductsService {
 
     // fin CACHÉ
 
-    return this.hhtp.get<ProductsResponse>(`${baseUrl}/products`, {
+    return this.http.get<ProductsResponse>(`${baseUrl}/products`, {
       params: {
         limit: limit,
         offset: offset,
@@ -68,7 +85,7 @@ export class ProductsService {
     // fin CACHÉ
 
 
-    return this.hhtp
+    return this.http
       .get<Product>(`${baseUrl}/products/${idSlug}`)
       .pipe(
         tap((producto) => this.productCache.set(clave, producto)), //guardamos en CACHÉ
@@ -83,7 +100,7 @@ export class ProductsService {
   getProductsByGender(genero: string): Observable<ProductsResponse> {
 
 
-    return this.hhtp.get<ProductsResponse>(`${baseUrl}/products`, {
+    return this.http.get<ProductsResponse>(`${baseUrl}/products`, {
       params: {
         limit: 9,
         offset: 0,
@@ -93,5 +110,97 @@ export class ProductsService {
       .pipe(
         tap((resp) => console.log(resp))
       );
+  }
+
+  /**
+   *
+   * @param id
+   */
+  getProductById(id: string): Observable<Product> {
+
+    if (id === 'new') {
+      return of(ProductoVacio)
+    }
+
+    // empezamos comprobación de si está en caché
+    if (this.productCache.has(id)) {
+      return of(this.productCache.get(id)!)
+    }
+
+    // fin CACHÉ
+
+
+    return this.http
+      .get<Product>(`${baseUrl}/products/${id}`)
+      .pipe(
+        tap((producto) => this.productCache.set(id, producto)), //guardamos en CACHÉ
+      );
+  }
+
+  crearProducto(producto: Partial<Product>): Observable<Product> {
+    return this.http.post<Product>(`${baseUrl}/products`, producto)
+      .pipe(
+        tap((productoCreado) => this.actualizarCacheProducto(productoCreado))
+      )
+  }
+
+
+
+  /**
+   * Actualizar producto
+   */
+  actualizarProducto(id: string, productLike: Partial<Product>): Observable<Product> {
+
+    return this.http.patch<Product>(`${baseUrl}/products/${id}`, productLike)
+      .pipe(
+        tap((productoActualizado) => this.actualizarCacheProducto(productoActualizado))
+      )
+  }
+
+
+
+
+  /**
+   * Actualizamos el caché.
+   * @param producto
+   */
+  actualizarCacheProducto(producto: Product) {
+    const productoId = producto.id;
+
+    this.productCache.set(productoId, producto);
+
+    //ahora actualizamos el producto en la paginación
+    //recorremos el map del caché buscando por todas las páginas
+    //si el id del producto que recorremos coincide con el que tenemos, entonces actualizamos los datos
+    //sino, se mantiene el producto que estamos recorriendo
+    this.productsCache.forEach(productosResponse => {
+      productosResponse.products = productosResponse.products.map(
+        (productoActual) => productoActual.id === productoId ? producto : productoActual
+      )
+    });
+    console.log('Caché actualizado')
+  }
+
+  //obtenemos el fileList y lo subimos
+  subidaImagenes(imagenes?: FileList): Observable<string[]> {
+    //si no hay imagenes devolvemos [] vacio
+    if(!imagenes)return of ([]);
+
+    const subidaObservables = Array.from(imagenes).map((imagenFile) => this.subidaImagen(imagenFile));
+
+    return forkJoin(subidaObservables).pipe(
+      tap((nombresImagenes) => console.log({nombresImagenes}))
+    )
+
+  }
+
+  subidaImagen(imagen: File): Observable<string> {
+    const formData = new FormData();
+    formData.append('file', imagen);
+
+    return this.http.post<{fileName: string}>(`${baseUrl}/files/product`,formData)
+    .pipe(
+      map((resp) => resp.fileName)
+    )
   }
 }

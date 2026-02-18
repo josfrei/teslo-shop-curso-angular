@@ -1,0 +1,107 @@
+<h1 class="text-2xl font-bold">{{ producto().title }}</h1>
+<div class="divider"></div>
+
+<form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- Datos generales -->
+  <div class="flex flex-col gap-2">
+    <h2 class="text-2xl font-bold h-12">Datos generales</h2>
+
+    <!-- title -->
+    <input type="text" placeholder="Título" class="input input-bordered w-full" formControlName="title"
+      [class.border-red-500]="productForm.get('title')?.errors ?? false" />
+    <form-error-label [control]="productForm.get('title')!" />
+
+    <!-- slug -->
+    <input type="text" placeholder="Slug" class="input input-bordered w-full" formControlName="slug"
+      [class.border-red-500]="productForm.get('slug')?.errors ?? false" />
+    <form-error-label [control]="productForm.get('slug')!" />
+
+    <!-- descripcion -->
+    <textarea class="textarea textarea-bordered" placeholder="Descripción" rows="6" formControlName="description"
+      [class.border-red-500]="productForm.get('description')?.errors ?? false"></textarea>
+    <form-error-label [control]="productForm.get('description')!" />
+
+    <h2 class="text-lg font-bold">Datos de venta</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div>
+        <!-- precio -->
+        <input type="number" placeholder="Precio" class="input input-bordered w-full" formControlName="price"
+          [class.border-red-500]="productForm.get('price')?.errors ?? false" />
+        <form-error-label [control]="productForm.get('price')!" />
+      </div>
+
+      <div>
+        <!-- stock -->
+        <input type="number" placeholder="Inventario" class="input input-bordered w-full" formControlName="stock"
+          [class.border-red-500]="productForm.get('stock')?.errors ?? false" />
+        <form-error-label [control]="productForm.get('stock')!" />
+      </div>
+
+    </div>
+
+    <!-- tags -->
+    <input type="text" placeholder="Tags" class="input input-bordered w-full" formControlName="tags"
+      [class.border-red-500]="productForm.get('tags')?.errors ?? false" />
+    <form-error-label [control]="productForm.get('tags')!" />
+
+    <!-- Botones para el género -->
+    <div class="grid grid-cols-4 gap-2">
+      <!-- <button class="btn btn-sm btn-outline">Masculino</button> -->
+      <button class="btn btn-sm" [class.btn-primary]="productForm.value.gender === 'men'" type="button"
+        (click)="productForm.patchValue({gender:'men'})">Masculino</button>
+      <button class="btn btn-sm" [class.btn-accent]="productForm.value.gender === 'women'" type="button"
+        (click)="productForm.patchValue({gender:'women'})">Femenino</button>
+      <button class="btn btn-sm" [class.btn-warning]="productForm.value.gender === 'kid'" type="button"
+        (click)="productForm.patchValue({gender:'kid'})">Kid</button>
+      <button class="btn btn-sm" [class.btn-secondary]="productForm.value.gender === 'unisex'" type="button"
+        (click)="productForm.patchValue({gender:'unisex'})">Unisex</button>
+    </div>
+
+    <!-- Sizes -->
+    <div class="grid grid-cols-6 gap-2">
+      @for (size of sizes; track size) {
+      <button class="btn btn-sm" [class.btn-warning]="productForm.value.sizes?.includes(size)" type="button"
+        (click)="tallaClicada(size)">{{ size }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+
+      <!-- Botón guardar -->
+    <div class="flex justify-end h-12">
+      <button class="btn btn-secondary" type="submit">
+        <!-- <span class="loading loading-spinner loading-sm"></span> -->
+        Guardar
+      </button>
+    </div>
+
+      <!-- Imágenes -->
+    <product-carrusel [imagenes]="imagenesCarrusel()" />
+
+    <!-- con este input se puede seleccionar cualquier archivo y se manera individual solo-->
+    <!-- <input type="file" class="file-input file-input-bordered w-full mt-4" />-->
+
+    <!-- con multiple permitimos seleccionar varios archivos a la vez y con accept image/* permite solo imágenes-->
+    <!-- con el change lo que vamosa hacer es:  -->
+    <input type="file" multiple accept="image/*" class="file-input file-input-bordered w-full mt-4"
+      (change)="onFilesChanged($event)" />
+
+    <!-- mostramos las miniaturas de las imágenes seleccionadas -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+
+      @for (imagen of tempImagenes(); track imagen) {
+      <img [src]="imagen" alt="Imagen seleccionada" class="w-full object-cover rounded-xl">
+      }
+
+    </div>
+
+  </div>
+</form>
+
+@if(productoGuardado()){
+<div class="alert alert-success fixed bottom-4 right-4 w-80 animate-fade-in">
+  <span>Datos actualizados correctamente</span>
+</div>
+}

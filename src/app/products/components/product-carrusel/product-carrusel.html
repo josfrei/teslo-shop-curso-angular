@@ -3,14 +3,15 @@
   <!-- Additional required wrapper -->
   <div class="swiper-wrapper">
     <!-- Slides -->
-     @for (imagen of imagenes(); track $index) {
+    @for (imagen of imagenes(); track $index) {
     <div class="swiper-slide">
-    <img
-      [src]="imagen | productImagePipe"
-      alt="Producto"
-      class="w-full object-cover animate-fade-in"/>
+      <img [src]="imagen | productImagePipe" alt="Producto" class="w-full object-cover animate-fade-in" />
     </div>
-     }
+    } @empty {
+      <div class="swiper-slide">
+      <img [src]=" null | productImagePipe" alt="Producto" class="w-full object-cover animate-fade-in" />
+    </div>
+    }
 
   </div>
   <!-- If we need pagination -->
