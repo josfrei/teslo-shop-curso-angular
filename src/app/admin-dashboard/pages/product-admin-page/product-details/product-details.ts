@@ -96,14 +96,14 @@ export class ProductDetails implements OnInit {
     //comprobamos si es producto nuevo o si ya existía
     if (this.producto().id === 'new') {
       const producto = await firstValueFrom(
-        this.productsService.crearProducto(productLike)
+        this.productsService.crearProducto(productLike, this.imagenesFileList)
       )
       //creamos el producto
       this.router.navigate(['/admin/products', producto.id]);
 
     } else {
       await firstValueFrom(
-        this.productsService.actualizarProducto(this.producto().id, productLike)
+        this.productsService.actualizarProducto(this.producto().id, productLike, this.imagenesFileList)
       )
     }
 

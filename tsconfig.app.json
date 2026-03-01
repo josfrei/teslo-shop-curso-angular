@@ -10,6 +10,7 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/**/*.spec.ts"
+    "src/**/*.spec.ts",
+      "C:/Users/josef/Desktop/Angular/10-nest-teslo-shop-backend/**/*"
   ]
 }

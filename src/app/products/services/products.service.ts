@@ -1,10 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Pipe } from '@angular/core';
 import { Gender, Product, ProductsResponse } from '../interfaces/product-interface';
-import { delay, forkJoin, map, Observable, of, tap } from 'rxjs';
+import { delay, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { User } from '@/auth/interfaces/user.interface';
-import { fileNamer } from '../../../../../10-nest-teslo-shop-backend/src/files/helpers/fileNamer.helper';
 
 const baseUrl = environment.baseUrl;
 
@@ -137,27 +136,52 @@ export class ProductsService {
       );
   }
 
-  crearProducto(producto: Partial<Product>): Observable<Product> {
-    return this.http.post<Product>(`${baseUrl}/products`, producto)
-      .pipe(
-        tap((productoCreado) => this.actualizarCacheProducto(productoCreado))
-      )
-  }
+  crearProducto(producto: Partial<Product>, imagenFileList?: FileList): Observable<Product> {
 
+    const imagenesActuales = producto.images ?? [];
+
+    return this.subidaImagenes(imagenFileList).pipe(
+      map((nombreImagenes) => ({
+        ...producto,
+        images: [...imagenesActuales, ...nombreImagenes],
+      })),
+      switchMap((productoNuevo)=>
+      this.http.post<Product>(`${baseUrl}/products`, productoNuevo)),
+      tap((productoCreado) => this.actualizarCacheProducto(productoCreado))
+    )
+
+
+   // return this.http.post<Product>(`${baseUrl}/products`, producto)
+   //   .pipe(
+   //     tap((productoCreado) => this.actualizarCacheProducto(productoCreado))
+   //   )
+
+  }
 
 
   /**
    * Actualizar producto
    */
-  actualizarProducto(id: string, productLike: Partial<Product>): Observable<Product> {
+  actualizarProducto(id: string, productLike: Partial<Product>, imagenFileList?: FileList): Observable<Product> {
 
-    return this.http.patch<Product>(`${baseUrl}/products/${id}`, productLike)
-      .pipe(
-        tap((productoActualizado) => this.actualizarCacheProducto(productoActualizado))
-      )
+    const imagenesActuales = productLike.images ?? [];
+
+    //mandamos tiodas las imagenes y se empiezana  subir
+    return this.subidaImagenes(imagenFileList).pipe(
+      map((nombreImagenes) => ({ //transformamos las imagenes en un nuevo objeto con todas las propiedades
+      ...productLike,
+      images: [...imagenesActuales, ...nombreImagenes],
+    })),
+      switchMap((productoActualizado) => //sirve para tomar el valor de un observable anterior y generar un observable basado en el anterior
+        this.http.patch<Product>(`${baseUrl}/products/${id}`, productoActualizado)),
+      tap((producto) => this.actualizarCacheProducto(producto))
+    );
+
+    // return this.http.patch<Product>(`${baseUrl}/products/${id}`, productLike)
+    //    .pipe(
+    //      tap((productoActualizado) => this.actualizarCacheProducto(productoActualizado))
+    //   )
   }
-
-
 
 
   /**
@@ -184,12 +208,12 @@ export class ProductsService {
   //obtenemos el fileList y lo subimos
   subidaImagenes(imagenes?: FileList): Observable<string[]> {
     //si no hay imagenes devolvemos [] vacio
-    if(!imagenes)return of ([]);
+    if (!imagenes) return of([]);
 
     const subidaObservables = Array.from(imagenes).map((imagenFile) => this.subidaImagen(imagenFile));
 
     return forkJoin(subidaObservables).pipe(
-      tap((nombresImagenes) => console.log({nombresImagenes}))
+      tap((nombresImagenes) => console.log({ nombresImagenes }))
     )
 
   }
@@ -198,9 +222,9 @@ export class ProductsService {
     const formData = new FormData();
     formData.append('file', imagen);
 
-    return this.http.post<{fileName: string}>(`${baseUrl}/files/product`,formData)
-    .pipe(
-      map((resp) => resp.fileName)
-    )
+    return this.http.post<{ fileName: string }>(`${baseUrl}/files/product`, formData)
+      .pipe(
+        map((resp) => resp.fileName)
+      )
   }
 }
